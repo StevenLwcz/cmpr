@@ -19,12 +19,12 @@ enum Mode {
    Hex,
    Char,
    Byte,
+   Single,
 }
 
 struct CmpOptions {
     file1: PathBuf,
     file2: Option<PathBuf>,
-    list: bool,
     mode: Mode,
     skip: usize,
 }
@@ -36,8 +36,8 @@ impl CmpOptions {
             skip: matches.value_of("skip").unwrap_or("0").parse::<usize>().unwrap_or(0),
             mode: if matches.is_present("hex") {Mode::Hex}
                   else if matches.is_present("char") {Mode::Char}
-                  else {Mode::Byte},
-            list: matches.is_present("list"),
+                  else if matches.is_present("list") {Mode::Byte}
+                  else {Mode::Single},
             file1: matches.value_of("file1").unwrap().into(),
             file2: matches.value_of("file2").map(PathBuf::from),
         }
@@ -80,6 +80,10 @@ fn main() {
         let y = b.unwrap();
         if x != y {
             match options.mode {
+                Mode::Single => {
+                    println!("{} {} differ at byte {}: {:02X} {:02X}", &file_name.to_string_lossy(), &file_name2.to_string_lossy(), addr, x, y);
+                    break;
+                },
                 Mode::Byte => println!("{:width$} {:3} {:3}", addr, x, y),
                 Mode::Hex  => println!("{:width$} {:02X} {:02X}", addr, x, y),
                 Mode::Char => println!("{:width$} {:1} {:1}", addr, to_char(x) ,to_char(y) ),
@@ -87,10 +91,15 @@ fn main() {
         }
         addr += 1;
     }
-    if addr < len1 as usize {
-        println!("EOF on {} at byte {}", file_name2.to_string_lossy(), len2);
-    } else if addr < len2 as usize {
-        println!("EOF on {} at byte {}", file_name.to_string_lossy(), len1);
+    match options.mode {
+        Mode::Single => (),
+        _ => {
+            if addr < len1 as usize {
+                println!("EOF on {} at byte {}", file_name2.to_string_lossy(), len2);
+            } else if addr < len2 as usize {
+                println!("EOF on {} at byte {}", file_name.to_string_lossy(), len1);
+            }
+        }
     }
     // todo system.exit depending on result
 }
