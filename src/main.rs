@@ -1,11 +1,9 @@
-// todo
-// -l option work
+// TODO
 // automated testing
-//
-// exit code 0  compare OK
-// 1 diff
-// 2 file not found other
-// 3 len different
+// improve char output - use unicode char for control characters
+// add -e ebcdic mode
+// todo stdin or maybe just not bother with
+// handle invalid skip parameter
 
 use std::cmp::min;
 use std::fs::File;
@@ -14,6 +12,11 @@ use std::io::Read;
 use std::fs;
 use clap::{App, Arg, ArgMatches};
 use std::path::PathBuf;
+
+const DIFF_OK: i32 = 0;
+const DIFF_FAIL: i32 = 1;
+const DIFF_FILE_NOT_FOUND: i32 = 2;
+const DIFF_FILE_LEN_DIFF: i32 = 3;
 
 enum Mode {
    Hex,
@@ -46,27 +49,27 @@ impl CmpOptions {
 
 fn main() {
 
+   let mut status = DIFF_OK;
    let options = parse_command_line();
    let skip = options.skip;
    let file_name = options.file1;
    let metadata = fs::metadata(&file_name).unwrap();
    let len1 = metadata.len();
    let file_name2 = options.file2.unwrap();
-   // todo stdin or maybe just not bother with
    let metadata = fs::metadata(&file_name2).unwrap();
    let len2 = metadata.len();
    let file1 = match File::open(&file_name) {
         Ok(r) => r,
         Err(err) => {
             eprintln!( "Can't open file {} - {}", file_name.to_string_lossy(), err);
-            std::process::exit(1);
+            std::process::exit(DIFF_FILE_NOT_FOUND);
        }
     };
     let file2 = match File::open(&file_name2) {
         Ok(r) => r,
         Err(err) => {
             eprintln!( "Can't open file {} - {}", file_name2.to_string_lossy(), err);
-            std::process::exit(1);
+            std::process::exit(DIFF_FILE_NOT_FOUND);
        }
     };
     let reader1 = BufReader::new(file1);
@@ -79,6 +82,7 @@ fn main() {
         let x = a.unwrap();
         let y = b.unwrap();
         if x != y {
+            status = DIFF_FAIL;
             match options.mode {
                 Mode::Single => {
                     println!("{} {} differ at byte {}: {:02X} {:02X}", &file_name.to_string_lossy(), &file_name2.to_string_lossy(), addr, x, y);
@@ -96,12 +100,15 @@ fn main() {
         _ => {
             if addr < len1 as usize {
                 println!("EOF on {} at byte {}", file_name2.to_string_lossy(), len2);
+                status = DIFF_FILE_LEN_DIFF;
             } else if addr < len2 as usize {
                 println!("EOF on {} at byte {}", file_name.to_string_lossy(), len1);
+                status = DIFF_FILE_LEN_DIFF;
             }
         }
     }
-    // todo system.exit depending on result
+    std::process::exit(status);
+
 }
 
 // todo add -i ignore
