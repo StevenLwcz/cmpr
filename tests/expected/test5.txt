@@ -1,0 +1,3 @@
+12 A a
+22 j J
+EOF on tests/files/test1b.txt at byte 28
