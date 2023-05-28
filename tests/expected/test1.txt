@@ -1,1 +1,1 @@
-tests/files/test1a.txt tests/files/test1b.txt differ at byte 12: 41 61
+tests/files/test1a.txt tests/files/test1b.txt differ at byte 13: 41 61

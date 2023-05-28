@@ -84,6 +84,7 @@ fn main() {
     let width = (min(len1, len2) as f32).log10().floor() as usize + 1;
     let mut addr = skip;
     for c in reader1.bytes().skip(skip).zip(reader2.bytes().skip(skip)) {
+        addr += 1;
         let (a, b) = c;
         let x = a.unwrap();
         let y = b.unwrap();
@@ -106,7 +107,6 @@ fn main() {
                 Mode::Char => println!("{:width$} {:1} {:1}", addr, to_char(x), to_char(y)),
             }
         }
-        addr += 1;
     }
     match options.mode {
         Mode::Single => (),

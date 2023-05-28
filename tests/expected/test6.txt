@@ -1,3 +1,3 @@
-12 A a
-22 j J
+13 A a
+23 j J
 EOF on tests/files/test2a.txt at byte 32
