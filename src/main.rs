@@ -61,11 +61,6 @@ fn main() {
     let options = parse_command_line();
     let skip = options.skip;
     let file_name = options.file1;
-    let metadata = fs::metadata(&file_name).unwrap();
-    let len1 = metadata.len();
-    let file_name2 = options.file2.unwrap();
-    let metadata = fs::metadata(&file_name2).unwrap();
-    let len2 = metadata.len();
     let file1 = match File::open(&file_name) {
         Ok(r) => r,
         Err(err) => {
@@ -73,6 +68,7 @@ fn main() {
             std::process::exit(DIFF_FILE_NOT_FOUND);
         }
     };
+    let file_name2 = options.file2.unwrap();
     let file2 = match File::open(&file_name2) {
         Ok(r) => r,
         Err(err) => {
@@ -80,6 +76,8 @@ fn main() {
             std::process::exit(DIFF_FILE_NOT_FOUND);
         }
     };
+    let len1 = fs::metadata(&file_name).unwrap().len();
+    let len2 = fs::metadata(&file_name2).unwrap().len();
     let reader1 = BufReader::new(file1);
     let reader2 = BufReader::new(file2);
 
