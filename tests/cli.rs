@@ -89,7 +89,21 @@ fn test6() {
         .stdout(expected);
 }
 
-// test7 test correct addr for file > 100 bytes
+#[test]
+fn test7() {
+    // test7 test addr wifth for file 100 bytes
+    // test 1st byte is 1
+    let testfile = "tests/expected/test7.txt";
+    let expected = fs::read_to_string(testfile).unwrap();
+    let mut cmd = Command::cargo_bin("cmpr").unwrap();
+    cmd.arg("-l")
+        .arg("tests/files/test3a.txt")
+        .arg("tests/files/test3b.txt")
+        .assert()
+        .code(DIFF_FAIL)
+        .stdout(expected);
+}
+
 // test8 test file does not exist file1
 // test9 test skip option
 // test10 test invalid skip option
