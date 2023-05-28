@@ -5,6 +5,7 @@ use std::fs;
 const DIFF_FAIL: i32 = 1;
 const DIFF_FILE_NOT_FOUND: i32 = 2;
 const DIFF_FILE_LEN_DIFF: i32 = 3;
+const DIFF_INVALID_ARGUMENT: i32 = 4;
 
 #[test]
 fn test1() {
@@ -134,7 +135,22 @@ fn test9() {
         .stdout(expected);
 }
 
-// test10 test invalid skip option
+#[test]
+fn test10() {
+    // test10 test invalid --ignore option
+    let testfile = "tests/expected/test10.txt";
+    let expected = fs::read_to_string(testfile).unwrap();
+    let mut cmd = Command::cargo_bin("cmpr").unwrap();
+    cmd.arg("-c")
+        .arg("--ignore")
+        .arg("purple")
+        .arg("tests/files/test3a.txt")
+        .arg("tests/files/test3b.txt")
+        .assert()
+        .code(DIFF_INVALID_ARGUMENT)
+        .stderr(expected);
+}
+
 // test11 test -c with control chars if implement
 // test12 test with stdin if implement
 // test13 test files compare OK

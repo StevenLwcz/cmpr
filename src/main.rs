@@ -17,6 +17,7 @@ const DIFF_OK: i32 = 0;
 const DIFF_FAIL: i32 = 1;
 const DIFF_FILE_NOT_FOUND: i32 = 2;
 const DIFF_FILE_LEN_DIFF: i32 = 3;
+const DIFF_INVALID_ARGUMENT: i32 = 4;
 
 enum Mode {
     Hex,
@@ -36,11 +37,13 @@ struct CmpOptions {
 impl CmpOptions {
     fn new(matches: ArgMatches) -> Self {
         Self {
-            skip: matches
-                .value_of("skip")
-                .unwrap_or("0")
-                .parse::<usize>()
-                .unwrap_or(0),
+            skip: match matches.value_of("skip").unwrap_or("0").parse::<usize>() {
+               Ok(s) => s,
+               Err(err) => {
+                   eprintln!("cmpr: invalid option for -i/--ignore - {}", err);
+                   std::process::exit(DIFF_INVALID_ARGUMENT);
+               }
+            },
             mode: if matches.is_present("hex") {
                 Mode::Hex
             } else if matches.is_present("char") {
