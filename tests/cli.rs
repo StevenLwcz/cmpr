@@ -18,3 +18,17 @@ fn test1() {
         .code(DIFF_FAIL)
         .stdout(expected);
 }
+
+#[test]
+fn test2() {
+    // basic test compare 2 files and list differences: -l option
+    let testfile = "tests/expected/test2.txt";
+    let expected = fs::read_to_string(testfile).unwrap();
+    let mut cmd = Command::cargo_bin("cmpr").unwrap();
+    cmd.arg("-l")
+        .arg("tests/files/test1a.txt")
+        .arg("tests/files/test1b.txt")
+        .assert()
+        .code(DIFF_FAIL)
+        .stdout(expected);
+}
