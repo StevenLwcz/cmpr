@@ -118,8 +118,22 @@ fn test8() {
         .stderr(expected);
 }
 
-// test8 test file does not exist file1
-// test9 test skip option
+#[test]
+fn test9() {
+    // test9 test --ignore option
+    let testfile = "tests/expected/test9.txt";
+    let expected = fs::read_to_string(testfile).unwrap();
+    let mut cmd = Command::cargo_bin("cmpr").unwrap();
+    cmd.arg("-c")
+        .arg("--ignore")
+        .arg("6")
+        .arg("tests/files/test3a.txt")
+        .arg("tests/files/test3b.txt")
+        .assert()
+        .code(DIFF_FAIL)
+        .stdout(expected);
+}
+
 // test10 test invalid skip option
 // test11 test -c with control chars if implement
 // test12 test with stdin if implement
