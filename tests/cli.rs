@@ -3,7 +3,7 @@ use std::fs;
 
 // const DIFF_OK: i32 = 0;
 const DIFF_FAIL: i32 = 1;
-// const DIFF_FILE_NOT_FOUND: i32 = 2;
+const DIFF_FILE_NOT_FOUND: i32 = 2;
 const DIFF_FILE_LEN_DIFF: i32 = 3;
 
 #[test]
@@ -102,6 +102,20 @@ fn test7() {
         .assert()
         .code(DIFF_FAIL)
         .stdout(expected);
+}
+
+#[test]
+fn test8() {
+    // test8 file does not exist
+    let testfile = "tests/expected/test8.txt";
+    let expected = fs::read_to_string(testfile).unwrap();
+    let mut cmd = Command::cargo_bin("cmpr").unwrap();
+    cmd.arg("-l")
+        .arg("tests/files/testXa.txt")
+        .arg("tests/files/test3b.txt")
+        .assert()
+        .code(DIFF_FILE_NOT_FOUND)
+        .stderr(expected);
 }
 
 // test8 test file does not exist file1
