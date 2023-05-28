@@ -32,3 +32,30 @@ fn test2() {
         .code(DIFF_FAIL)
         .stdout(expected);
 }
+
+#[test]
+fn test3() {
+    // basic test compare 2 files and list differences: -h option
+    let testfile = "tests/expected/test3.txt";
+    let expected = fs::read_to_string(testfile).unwrap();
+    let mut cmd = Command::cargo_bin("cmpr").unwrap();
+    cmd.arg("-h")
+        .arg("tests/files/test1a.txt")
+        .arg("tests/files/test1b.txt")
+        .assert()
+        .code(DIFF_FAIL)
+        .stdout(expected);
+}
+
+// test4 test -c
+// test5 test EOF message file1
+// test6 test EOF message file2
+// test7 test correct addr for file > 100 bytes
+// test8 test file does not exist file1
+// test9 test skip option
+// test10 test invalid skip option
+// test11 test -c with control chars if implement
+// test12 test with stdin if implement
+
+
+// test9 

@@ -81,7 +81,7 @@ fn main() {
     let reader1 = BufReader::new(file1);
     let reader2 = BufReader::new(file2);
 
-    let width = (min(len1, len2) as f32).log10().ceil() as usize + 1;
+    let width = (min(len1, len2) as f32).log10().floor() as usize + 1;
     let mut addr = skip;
     for c in reader1.bytes().skip(skip).zip(reader2.bytes().skip(skip)) {
         let (a, b) = c;
