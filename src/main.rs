@@ -61,10 +61,14 @@ fn main() {
     let options = parse_command_line();
     let skip = options.skip;
     let file_name = options.file1;
+    if !file_name.exists() {
+        eprintln!("cmpr: File {} does not exist.", file_name.to_string_lossy());
+        std::process::exit(DIFF_FILE_NOT_FOUND);
+    }
     let file1 = match File::open(&file_name) {
         Ok(r) => r,
         Err(err) => {
-            eprintln!("Can't open file {} - {}", file_name.to_string_lossy(), err);
+            eprintln!("cmpr: Can't open file {} - {}", file_name.to_string_lossy(), err);
             std::process::exit(DIFF_FILE_NOT_FOUND);
         }
     };
@@ -72,7 +76,7 @@ fn main() {
     let file2 = match File::open(&file_name2) {
         Ok(r) => r,
         Err(err) => {
-            eprintln!("Can't open file {} - {}", file_name2.to_string_lossy(), err);
+            eprintln!("cmpr: Can't open file {} - {}", file_name2.to_string_lossy(), err);
             std::process::exit(DIFF_FILE_NOT_FOUND);
         }
     };

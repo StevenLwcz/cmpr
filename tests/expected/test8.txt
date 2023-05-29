@@ -1,1 +1,1 @@
-Can't open file tests/files/testXa.txt - No such file or directory (os error 2)
+cmpr: File tests/files/testXa.txt does not exist.
