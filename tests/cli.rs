@@ -151,6 +151,18 @@ fn test10() {
         .stderr(expected);
 }
 
-// test11 test -c with control chars if implement
+#[test]
+fn test11() {
+    // test11 -C prints control characters as num 0 - 31 with circle.
+    let testfile = "tests/expected/test11.txt";
+    let expected = fs::read_to_string(testfile).unwrap();
+    let mut cmd = Command::cargo_bin("cmpr").unwrap();
+    cmd.arg("-c")
+        .arg("tests/files/test11a")
+        .arg("tests/files/test11b")
+        .assert()
+        .code(DIFF_FAIL)
+        .stdout(expected);
+}
 // test12 test with stdin if implement
 // test13 test files compare OK

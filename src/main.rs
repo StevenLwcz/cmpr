@@ -1,9 +1,6 @@
 // TODO
-// automated testing
-// improve char output - use unicode char for control characters
-// add -e ebcdic mode
-// todo stdin or maybe just not bother with
-// handle invalid skip parameter
+// add -e ebcdic mode ?
+// stdin or maybe just not bother
 
 use clap::{App, Arg, ArgMatches};
 use std::cmp::min;
@@ -178,6 +175,11 @@ fn to_char(b: u8) -> char {
     if b.is_ascii_graphic() {
         b as char
     } else {
-        '\u{25AF}'
+        match b {
+            0 => '\u{24ea}',
+            1..=20 => char::from_u32(0x245f + b as u32).unwrap(),
+            21..=31 => char::from_u32(0x3251 - 21 + b as u32).unwrap(),
+            _ => '\u{25AF}'
+        }
     }
 }
