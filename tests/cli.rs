@@ -1,7 +1,7 @@
 use assert_cmd::Command;
 use std::fs;
 
-// const DIFF_OK: i32 = 0;
+const DIFF_OK: i32 = 0;
 const DIFF_FAIL: i32 = 1;
 const DIFF_FILE_NOT_FOUND: i32 = 2;
 const DIFF_FILE_LEN_DIFF: i32 = 3;
@@ -164,5 +164,18 @@ fn test11() {
         .code(DIFF_FAIL)
         .stdout(expected);
 }
-// test12 test with stdin if implement
-// test13 test files compare OK
+
+#[test]
+fn test12() {
+    // test12 two files compare OK
+    let mut cmd = Command::cargo_bin("cmpr").unwrap();
+    cmd.arg("-c")
+        .arg("tests/files/test12a.txt")
+        .arg("tests/files/test12b.txt")
+        .assert()
+        .code(DIFF_OK);
+}
+
+// test12 test files compare OK
+// test13 test with stdin if implement
+
