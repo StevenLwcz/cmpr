@@ -91,25 +91,26 @@ fn main() {
         Mode::Single => true,
         _ => false,
     };
-    let vec = compare_files(reader1, reader2, skip, single);
-    for d in vec {
-        status = DIFF_FAIL;
-        match options.mode {
-            Mode::Single => {
-                println!(
-                    "{} {} differ at byte {}: {:02X} {:02X}",
-                    &file_name.to_string_lossy(),
-                    &file_name2.to_string_lossy(),
-                    d.0, d.1, d.2,
-                );
-                break;
+
+    if single {
+        match compare_files_single(reader1, reader2, skip) {
+            Some(d) => {
+                status = DIFF_FAIL;
+                println!("{} {} differ at byte {}: {:02X} {:02X}", &file_name.to_string_lossy(), &file_name2.to_string_lossy(), d.0, d.1, d.2);
+            },
+            None => (),
+        };
+    } else {
+        let vec = compare_files(reader1, reader2, skip);
+        for d in vec {
+            status = DIFF_FAIL;
+            match options.mode {
+                Mode::Byte => println!("{:width$} {:3} {:3}", d.0, d.1, d.2),
+                Mode::Hex => println!("{:width$} {:02X} {:02X}", d.0, d.1, d.2),
+                Mode::Char => println!("{:width$} {:1} {:1}", d.0, to_char(d.1), to_char(d.2)),
+                Mode::Single => (),
             }
-            Mode::Byte => println!("{:width$} {:3} {:3}", d.0, d.1, d.2),
-            Mode::Hex => println!("{:width$} {:02X} {:02X}", d.0, d.1, d.2),
-            Mode::Char => println!("{:width$} {:1} {:1}", d.0, to_char(d.1), to_char(d.2)),
         }
-    }
-    if !single {
         if len2 < len1 {
             println!("EOF on {} at byte {}", file_name2.to_string_lossy(), len2);
             status = DIFF_FILE_LEN_DIFF;
@@ -121,22 +122,35 @@ fn main() {
     std::process::exit(status);
 }
 
-fn compare_files<R>(reader1: R, reader2: R, skip: usize, single: bool) -> Vec<Data> where R: BufRead {
-    let mut vec = Vec::new();
+fn compare_files_single<R>(reader1: R, reader2: R, skip: usize) -> Option<Data> where R: BufRead {
     let mut addr = skip;
-    for c in reader1.bytes().skip(skip).zip(reader2.bytes().skip(skip)) {
+    reader1.bytes().skip(skip).zip(reader2.bytes().skip(skip))
+    .find_map(|d| {
         addr += 1;
-        let (a, b) = c;
-        let x = a.unwrap();
-        let y = b.unwrap();
-        if x != y {
-            vec.push((addr, x, y));
-            if single {
-                break;
-            };
-         };
-     };
-     vec
+        let x = d.0.unwrap();
+        let y = d.1.unwrap();
+        if x ==  y {
+            None
+        } else {
+            Some((addr, x, y))
+        }
+     })
+}
+
+fn compare_files<R>(reader1: R, reader2: R, skip: usize) -> Vec<Data> where R: BufRead {
+    let mut addr = skip;
+    reader1.bytes().skip(skip).zip(reader2.bytes().skip(skip))
+    .filter_map(|d| {
+        addr += 1;
+        let x = d.0.unwrap();
+        let y = d.1.unwrap();
+        if x == y {
+            None
+        } else {
+            Some((addr, x, y))
+        }
+    })
+    .collect()
 }
 
 // normal cmp can read from std with ctrl-d
