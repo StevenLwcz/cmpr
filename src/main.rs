@@ -6,8 +6,7 @@ use clap::{App, Arg, ArgMatches};
 use std::cmp::min;
 use std::fs;
 use std::fs::File;
-use std::io::BufReader;
-use std::io::Read;
+use std::io::{BufReader, BufRead};
 use std::path::PathBuf;
 
 const DIFF_OK: i32 = 0;
@@ -15,6 +14,8 @@ const DIFF_FAIL: i32 = 1;
 const DIFF_FILE_NOT_FOUND: i32 = 2;
 const DIFF_FILE_LEN_DIFF: i32 = 3;
 const DIFF_INVALID_ARGUMENT: i32 = 4;
+
+type Data = (usize, u8, u8);
 
 enum Mode {
     Hex,
@@ -86,6 +87,42 @@ fn main() {
     let reader2 = BufReader::new(file2);
 
     let width = (min(len1, len2) as f32).log10().floor() as usize + 1;
+    let single = match options.mode {
+        Mode::Single => true,
+        _ => false,
+    };
+    let vec = compare_files(reader1, reader2, skip, single);
+    for d in vec {
+        status = DIFF_FAIL;
+        match options.mode {
+            Mode::Single => {
+                println!(
+                    "{} {} differ at byte {}: {:02X} {:02X}",
+                    &file_name.to_string_lossy(),
+                    &file_name2.to_string_lossy(),
+                    d.0, d.1, d.2,
+                );
+                break;
+            }
+            Mode::Byte => println!("{:width$} {:3} {:3}", d.0, d.1, d.2),
+            Mode::Hex => println!("{:width$} {:02X} {:02X}", d.0, d.1, d.2),
+            Mode::Char => println!("{:width$} {:1} {:1}", d.0, to_char(d.1), to_char(d.2)),
+        }
+    }
+    if !single {
+        if len2 < len1 {
+            println!("EOF on {} at byte {}", file_name2.to_string_lossy(), len2);
+            status = DIFF_FILE_LEN_DIFF;
+        } else if len1 < len2 {
+            println!("EOF on {} at byte {}", file_name.to_string_lossy(), len1);
+            status = DIFF_FILE_LEN_DIFF;
+        }
+    }
+    std::process::exit(status);
+}
+
+fn compare_files<R>(reader1: R, reader2: R, skip: usize, single: bool) -> Vec<Data> where R: BufRead {
+    let mut vec = Vec::new();
     let mut addr = skip;
     for c in reader1.bytes().skip(skip).zip(reader2.bytes().skip(skip)) {
         addr += 1;
@@ -93,41 +130,15 @@ fn main() {
         let x = a.unwrap();
         let y = b.unwrap();
         if x != y {
-            status = DIFF_FAIL;
-            match options.mode {
-                Mode::Single => {
-                    println!(
-                        "{} {} differ at byte {}: {:02X} {:02X}",
-                        &file_name.to_string_lossy(),
-                        &file_name2.to_string_lossy(),
-                        addr,
-                        x,
-                        y
-                    );
-                    break;
-                }
-                Mode::Byte => println!("{:width$} {:3} {:3}", addr, x, y),
-                Mode::Hex => println!("{:width$} {:02X} {:02X}", addr, x, y),
-                Mode::Char => println!("{:width$} {:1} {:1}", addr, to_char(x), to_char(y)),
-            }
-        }
-    }
-    match options.mode {
-        Mode::Single => (),
-        _ => {
-            if addr < len1 as usize {
-                println!("EOF on {} at byte {}", file_name2.to_string_lossy(), len2);
-                status = DIFF_FILE_LEN_DIFF;
-            } else if addr < len2 as usize {
-                println!("EOF on {} at byte {}", file_name.to_string_lossy(), len1);
-                status = DIFF_FILE_LEN_DIFF;
-            }
-        }
-    }
-    std::process::exit(status);
+            vec.push((addr, x, y));
+            if single {
+                break;
+            };
+         };
+     };
+     vec
 }
 
-// todo add -i ignore
 // normal cmp can read from std with ctrl-d
 fn parse_command_line() -> CmpOptions {
     let matches = App::new("cmpr")
