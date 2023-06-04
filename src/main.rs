@@ -25,8 +25,8 @@ enum Mode {
 }
 
 struct CmpOptions {
-    file1: PathBuf,
-    file2: Option<PathBuf>,
+    file1: String,
+    file2: Option<String>,
     mode: Mode,
     skip: usize,
 }
@@ -52,7 +52,7 @@ impl CmpOptions {
                 Mode::Single
             },
             file1: matches.value_of("file1").unwrap().into(),
-            file2: matches.value_of("file2").map(PathBuf::from),
+            file2: matches.value_of("file2").map(String::from),
         }
     }
 }
@@ -62,14 +62,14 @@ fn main() {
     let options = parse_command_line();
     let skip = options.skip;
     let file_name = options.file1;
-    if !file_name.exists() {
-        eprintln!("cmpr: File {} does not exist.", file_name.to_string_lossy());
+    if !PathBuf::from(&file_name).exists() {
+        eprintln!("cmpr: File {} does not exist.", file_name);
         std::process::exit(DIFF_FILE_NOT_FOUND);
     }
     let file1 = match File::open(&file_name) {
         Ok(r) => r,
         Err(err) => {
-            eprintln!("cmpr: Can't open file {} - {}", file_name.to_string_lossy(), err);
+            eprintln!("cmpr: Can't open file {} - {}", file_name, err);
             std::process::exit(DIFF_FILE_NOT_FOUND);
         }
     };
@@ -77,7 +77,7 @@ fn main() {
     let file2 = match File::open(&file_name2) {
         Ok(r) => r,
         Err(err) => {
-            eprintln!("cmpr: Can't open file {} - {}", file_name2.to_string_lossy(), err);
+            eprintln!("cmpr: Can't open file {} - {}", file_name2, err);
             std::process::exit(DIFF_FILE_NOT_FOUND);
         }
     };
@@ -86,7 +86,6 @@ fn main() {
     let reader1 = BufReader::new(file1);
     let reader2 = BufReader::new(file2);
 
-    let width = (min(len1, len2) as f32).log10().floor() as usize + 1;
     let single = match options.mode {
         Mode::Single => true,
         _ => false,
@@ -96,11 +95,12 @@ fn main() {
         match compare_files_single(reader1, reader2, skip) {
             Some(d) => {
                 status = DIFF_FAIL;
-                println!("{} {} differ at byte {}: {:02X} {:02X}", &file_name.to_string_lossy(), &file_name2.to_string_lossy(), d.0, d.1, d.2);
+                println!("{} {} differ at byte {}: {:02X} {:02X}", &file_name, &file_name2, d.0, d.1, d.2);
             },
             None => (),
         };
     } else {
+        let width = (min(len1, len2) as f32).log10().floor() as usize + 1;
         let vec = compare_files(reader1, reader2, skip);
         for d in vec {
             status = DIFF_FAIL;
@@ -112,10 +112,10 @@ fn main() {
             }
         }
         if len2 < len1 {
-            println!("EOF on {} at byte {}", file_name2.to_string_lossy(), len2);
+            println!("EOF on {} at byte {}", file_name2, len2);
             status = DIFF_FILE_LEN_DIFF;
         } else if len1 < len2 {
-            println!("EOF on {} at byte {}", file_name.to_string_lossy(), len1);
+            println!("EOF on {} at byte {}", file_name, len1);
             status = DIFF_FILE_LEN_DIFF;
         }
     }
