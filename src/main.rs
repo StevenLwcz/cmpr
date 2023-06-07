@@ -8,6 +8,7 @@ use std::fs;
 use std::fs::File;
 use std::io::{BufReader, BufRead};
 use std::path::PathBuf;
+use std::io;
 
 const DIFF_OK: i32 = 0;
 const DIFF_FAIL: i32 = 1;
@@ -73,18 +74,9 @@ fn main() {
             std::process::exit(DIFF_FILE_NOT_FOUND);
         }
     };
-    let file_name2 = options.file2.unwrap();
-    let file2 = match File::open(&file_name2) {
-        Ok(r) => r,
-        Err(err) => {
-            eprintln!("cmpr: Can't open file {} - {}", file_name2, err);
-            std::process::exit(DIFF_FILE_NOT_FOUND);
-        }
-    };
     let len1 = fs::metadata(&file_name).unwrap().len();
-    let len2 = fs::metadata(&file_name2).unwrap().len();
     let reader1 = BufReader::new(file1);
-    let reader2 = BufReader::new(file2);
+    let (len2, file_name2, reader2) = handle_file2(options.file2);
 
     let single = match options.mode {
         Mode::Single => true,
@@ -122,7 +114,25 @@ fn main() {
     std::process::exit(status);
 }
 
-fn compare_files_single<R>(reader1: R, reader2: R, skip: usize) -> Option<Data> where R: BufRead {
+
+fn handle_file2(o: Option<String>) -> (u64, String, Box<dyn BufRead>) {
+    match o {
+        None => (u64::MAX, "-".to_string(), Box::new(io::stdin().lock())),
+        Some(file_name) => {
+            let file2 = match File::open(&file_name) {
+                Ok(r) => r,
+                Err(err) => {
+                    eprintln!("cmpr: Can't open file {} - {}", file_name, err);
+                    std::process::exit(DIFF_FILE_NOT_FOUND);
+                }
+            };
+            let len2 = fs::metadata(&file_name).unwrap().len();
+            (len2, file_name, Box::new(BufReader::new(file2)))
+        }
+    }
+}
+
+fn compare_files_single<R1,R2>(reader1: R1, reader2: R2, skip: usize) -> Option<Data> where R1: BufRead, R2: BufRead {
     let mut addr = skip;
     reader1.bytes().skip(skip).zip(reader2.bytes().skip(skip))
     .find_map(|d| {
@@ -137,7 +147,7 @@ fn compare_files_single<R>(reader1: R, reader2: R, skip: usize) -> Option<Data> 
      })
 }
 
-fn compare_files<R>(reader1: R, reader2: R, skip: usize) -> Vec<Data> where R: BufRead {
+fn compare_files<R1,R2>(reader1: R1, reader2: R2, skip: usize) -> Vec<Data> where R1: BufRead, R2: BufRead {
     let mut addr = skip;
     reader1.bytes().skip(skip).zip(reader2.bytes().skip(skip))
     .filter_map(|d| {
