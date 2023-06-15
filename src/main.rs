@@ -164,7 +164,7 @@ fn compare_files<R1,R2>(reader1: R1, reader2: R2, skip: usize) -> (Vec<Data>, u6
 // normal cmp can read from std with ctrl-d
 fn parse_command_line() -> CmpOptions {
     let matches = App::new("cmpr")
-        .version("0.1.0")
+        .version("0.1.1")
         .author("Steven Lalewicz 05-2023")
         .about("cmpr with ascii, byte or hex output")
         .arg(
@@ -200,7 +200,7 @@ fn parse_command_line() -> CmpOptions {
         )
         .arg(
             Arg::with_name("file2")
-                .help("second file to compare")
+                .help("second file to compare. If omitted stdin is used")
                 .index(2),
         )
         .get_matches();
