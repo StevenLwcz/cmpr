@@ -30,7 +30,6 @@ struct CmpOptions {
     skip: usize,
 }
 
-// todo catch non numeric value for skip
 impl CmpOptions {
     fn new(matches: ArgMatches) -> Self {
         Self {
@@ -81,7 +80,7 @@ fn main() {
     if single {
         if let Some(d) = compare_files_single(reader1, reader2, skip) {
             status = DIFF_FAIL;
-             println!("{} {} differ at byte {}: {:02X} {:02X}", &file_name, &file_name2, d.0, d.1, d.2);
+            println!("{} {} differ at byte {}: {:02X} {:02X}", &file_name, &file_name2, d.0, d.1, d.2);
         };
     } else {
         let (vec, len2) = compare_files(reader1, reader2, skip);

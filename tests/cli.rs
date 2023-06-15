@@ -176,6 +176,16 @@ fn test12() {
         .code(DIFF_OK);
 }
 
-// test12 test files compare OK
-// test13 test with stdin if implement
-
+#[test]
+fn test13() {
+    // test13 - test stdin
+    let testfile = "tests/expected/test13.txt";
+    let expected = fs::read_to_string(testfile).unwrap();
+    let mut cmd = Command::cargo_bin("cmpr").unwrap();
+    cmd.arg("-c")
+        .arg("tests/files/test13a.txt")
+        .write_stdin("abcdefghijklmnopqrst")
+        .assert()
+        .code(DIFF_FILE_LEN_DIFF)
+        .stdout(expected);
+}

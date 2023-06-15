@@ -1,0 +1,2 @@
+11 ⑩ k
+EOF on tests/files/test13a.txt at byte 11
