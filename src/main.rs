@@ -1,6 +1,4 @@
-// TODO
 // add -e ebcdic mode ?
-// stdin or maybe just not bother
 
 use clap::{App, Arg, ArgMatches};
 use std::cmp::min;
@@ -76,24 +74,18 @@ fn main() {
     };
     let len1 = fs::metadata(&file_name).unwrap().len();
     let reader1 = BufReader::new(file1);
-    let (len2, file_name2, reader2) = handle_file2(options.file2);
+    let (file_name2, reader2) = handle_file2(options.file2);
 
-    let single = match options.mode {
-        Mode::Single => true,
-        _ => false,
-    };
+    let single = matches!(options.mode, Mode::Single);
 
     if single {
-        match compare_files_single(reader1, reader2, skip) {
-            Some(d) => {
-                status = DIFF_FAIL;
-                println!("{} {} differ at byte {}: {:02X} {:02X}", &file_name, &file_name2, d.0, d.1, d.2);
-            },
-            None => (),
+        if let Some(d) = compare_files_single(reader1, reader2, skip) {
+            status = DIFF_FAIL;
+             println!("{} {} differ at byte {}: {:02X} {:02X}", &file_name, &file_name2, d.0, d.1, d.2);
         };
     } else {
+        let (vec, len2) = compare_files(reader1, reader2, skip);
         let width = (min(len1, len2) as f32).log10().floor() as usize + 1;
-        let vec = compare_files(reader1, reader2, skip);
         for d in vec {
             status = DIFF_FAIL;
             match options.mode {
@@ -115,9 +107,9 @@ fn main() {
 }
 
 
-fn handle_file2(o: Option<String>) -> (u64, String, Box<dyn BufRead>) {
+fn handle_file2(o: Option<String>) -> (String, Box<dyn BufRead>) {
     match o {
-        None => (u64::MAX, "-".to_string(), Box::new(io::stdin().lock())),
+        None => ("-".to_string(), Box::new(io::stdin().lock())),
         Some(file_name) => {
             let file2 = match File::open(&file_name) {
                 Ok(r) => r,
@@ -126,8 +118,7 @@ fn handle_file2(o: Option<String>) -> (u64, String, Box<dyn BufRead>) {
                     std::process::exit(DIFF_FILE_NOT_FOUND);
                 }
             };
-            let len2 = fs::metadata(&file_name).unwrap().len();
-            (len2, file_name, Box::new(BufReader::new(file2)))
+            (file_name, Box::new(BufReader::new(file2)))
         }
     }
 }
@@ -147,9 +138,11 @@ fn compare_files_single<R1,R2>(reader1: R1, reader2: R2, skip: usize) -> Option<
      })
 }
 
-fn compare_files<R1,R2>(reader1: R1, reader2: R2, skip: usize) -> Vec<Data> where R1: BufRead, R2: BufRead {
+fn compare_files<R1,R2>(reader1: R1, reader2: R2, skip: usize) -> (Vec<Data>, u64) where R1: BufRead, R2: BufRead {
     let mut addr = skip;
-    reader1.bytes().skip(skip).zip(reader2.bytes().skip(skip))
+    let mut binding = reader2.bytes();
+    let i = binding.by_ref();
+    let data = reader1.bytes().skip(skip).zip(i.skip(skip))
     .filter_map(|d| {
         addr += 1;
         let x = d.0.unwrap();
@@ -160,7 +153,12 @@ fn compare_files<R1,R2>(reader1: R1, reader2: R2, skip: usize) -> Vec<Data> wher
             Some((addr, x, y))
         }
     })
-    .collect()
+    .collect();
+    addr += match i.next() {
+        Some(_) => 1,
+        None => 0,
+    };
+    (data, addr as u64)
 }
 
 // normal cmp can read from std with ctrl-d
